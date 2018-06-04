@@ -13,10 +13,13 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include "window.h"
+#include "Camera.h"
+
 
 const GLint WIDTH = 1280, HEIGHT = 720;
 
 window mainWindow;
+Camera camera;
 std::vector<Mesh*> meshList;
 std::vector<Shader> shaderList;
 
@@ -94,19 +97,26 @@ int main()
     createObjects();
     createShaders();
     
-    GLuint uniformProjection = 0, uniformModel = 0;
+    camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 0.05f, 0.05f);
+    
+    GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0;
     glm::mat4 Projection = glm::perspective(45.0f, (GLfloat)mainWindow.getBufferWidth() / (GLfloat)mainWindow.getBufferHeight(), 0.1f, 100.0f);
 
     GLfloat angle = 0.0f;
     while (!mainWindow.getShouldClose())
     {
         glfwPollEvents();
+        
+        camera.keyControl(mainWindow.getKeys());
+        camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
+        
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         shaderList[0].useShader();
         uniformModel = shaderList[0].getModelLocation();
         uniformProjection = shaderList[0].getProjectionLocation();
+        uniformView = shaderList[0].getViewLocation();
         
         glm::mat4 model(1.0);
         angle += 0.02f;
@@ -114,6 +124,7 @@ int main()
         model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
         glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(Projection));
+        glUniformMatrix4fv(uniformView , 1 , GL_FALSE, glm::value_ptr(camera.calculateViewMatrix()));
         
         meshList[0]->renderMesh();
         
